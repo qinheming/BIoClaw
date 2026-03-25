@@ -5,7 +5,7 @@
   <p><i>Building the local super-brain for wet & dry labs, beyond monolithic AI.</i></p>
 </div>
 
-## 🥊 Why BioClaw > LabClaw?
+## 🥊 Why BioClaw 
 While existings scientific agents dump fragile tools into a single context window and rely on Cloud LLMs, **BioClaw** approaches AI-for-Science differently:
 - 🔒 **Zero-Trust Privacy:** Compute molecular docking and genomics entirely locally. Your SME data never leaves the hardware.
 - 🧫 **Wet-Lab Safety Sandbox:** Uses AST parsing to strictly prevent AI-generated destructive code from crashing your physical automated liquid handlers.
