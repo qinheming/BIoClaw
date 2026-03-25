@@ -1,31 +1,15 @@
-# Python 
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-
-# Env
-venv/
-env/
+# 🛑 绝对不能上传的机密环境变量文件！
 .env
 
-# Poetry
-.pytest_cache/
-.coverage
-htmlcov/
-dist/
-build/
-*.egg-info/
+# 🐍 忽略 Python 虚拟环境和缓存
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
 
-# IDE
-.idea/
-.vscode/
+# 🖼️ 忽略系统本地运算时临时生成的图片文件
+molecule_vis.png
+
+# 💻 忽略 Mac 系统的隐藏缓存
 .DS_Store
-
-# BioClaw 
-data/
-*.h5ad
-*.pdb
-*.sdf
-models/
-*.gguf
