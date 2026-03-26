@@ -1,15 +1,7 @@
-# 🛑 绝对不能上传的机密环境变量文件！
 .env
-
-# 🐍 忽略 Python 虚拟环境和缓存
 __pycache__/
 *.pyc
-.venv/
-venv/
-env/
-
-# 🖼️ 忽略系统本地运算时临时生成的图片文件
-molecule_vis.png
-
-# 💻 忽略 Mac 系统的隐藏缓存
+molecule_2d.png
+sandbox_plot.png
+BioClaw_Novel.pdb
 .DS_Store
