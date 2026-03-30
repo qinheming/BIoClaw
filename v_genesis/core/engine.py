@@ -39,14 +39,17 @@ class BloClawCoordinator:
 
     def execute_sandbox(self, python_code):
         output_buffer = io.StringIO()
-        html_file = os.path.abspath("sandbox_plot.html")
-        png_file = os.path.abspath("sandbox_plot.png")
-        if os.path.exists(html_file): os.remove(html_file)
-        if os.path.exists(png_file): os.remove(png_file)
+        
+        # 战前爆破：清理前朝余孽图纸
+        if os.path.exists("sandbox_plot.html"): os.remove("sandbox_plot.html")
+        if os.path.exists("sandbox_plot.png"): os.remove("sandbox_plot.png")
         
         success = True; error_msg = ""
+        # 封装变量环境！
+        sand_env = {"requests": requests, "os": os, "re": re}
         try:
             with redirect_stdout(output_buffer):
+                # 🌟 强行环境挂载！
                 injection_header = """
 import numpy as np
 import pandas as pd
@@ -57,42 +60,48 @@ import warnings
 warnings.filterwarnings('ignore')
 plt.rcParams['figure.figsize'] = (10, 6)
 plt.rcParams['figure.dpi'] = 150
+# 强行使 AI 的 show() 瘫痪，防止进程僵死
 plt.show = lambda *args, **kwargs: None
 if hasattr(go.Figure, 'show'): go.Figure.show = lambda self, *args, **kwargs: None
-_old_savefig = plt.savefig
-def _hijacked_savefig(*args, **kwargs):
-    kwargs['bbox_inches'] = 'tight'
-    _old_savefig(r"{png_file}", **kwargs)
-plt.savefig = _hijacked_savefig
 """
-                safe_code = python_code
-                if "plotly" in safe_code or "px." in safe_code or "go." in safe_code:
-                    if "fig.show()" not in safe_code and "figure.show()" not in safe_code:
-                        safe_code += "\ntry:\n    if 'fig' in locals(): fig.show()\n    elif 'figure' in locals(): figure.show()\nexcept: pass\n"
-                    safe_code += "\nfor _k, _v in list(locals().items()):\n    if isinstance(_v, go.Figure):\n        try: _v.write_html('sandbox_plot.html', full_html=False, include_plotlyjs='cdn')\n        except: pass\n"
                 
-                if "matplotlib" in safe_code or "plt." in safe_code:
-                    if "plt.savefig" not in safe_code: safe_code += "\ntry: plt.savefig('ignore.png')\nexcept: pass\n" 
-
-                safe_code = re.sub(r"fig\.show\(\)|plt\.show\(\)", "", safe_code)
-                safe_code = re.sub(r"fig\.write_html\(.*?\)|plt\.savefig\(.*?\)", "", safe_code)
-                exec(injection_header + safe_code, {"requests": requests, "os": os, "re": re})
+                # 🌟 绝境物理劫持代码：不管模型怎么写，我们在它写完的代码后面强行查房！
+                injection_footer = """
+_we_saved_something = False
+# 查房 1：翻找它生成的任何 Plotly 图形变量，强行导出交互式 HTML！
+for _var_name, _var_val in list(locals().items()):
+    if 'plotly.graph_objs' in str(type(_var_val)):
+        _var_val.write_html('sandbox_plot.html', full_html=False, include_plotlyjs='cdn')
+        _we_saved_something = True
+        break
+# 查房 2：如果它死活没用 Plotly 而是用了老掉牙的 matplotlib，给它存成死图 PNG
+if not _we_saved_something and plt.get_fignums():
+    plt.savefig('sandbox_plot.png', bbox_inches='tight')
+"""
+                
+                # 正则剥皮：砍掉大模型多余的保存代码，全由我们的 Footer 查房接管
+                safe_code = re.sub(r"fig\.show\(\)|plt\.show\(\)", "", python_code)
+                safe_code = re.sub(r"fig\.write_html\(.*?\)", "", safe_code)
+                safe_code = re.sub(r"plt\.savefig\(.*?\)", "", safe_code)
+                
+                exec(injection_header + safe_code + "\n\n" + injection_footer, sand_env)
         except Exception as e:
             success = False; error_msg = traceback.format_exc()
             
         plot_html = None
         plot_img = None
-        if os.path.exists(html_file):
-            with open(html_file, "r", encoding="utf-8") as f:
-                content = f.read()
-                extracted = re.search(r"<div>.*?</div>", content, re.DOTALL | re.IGNORECASE)
-                plot_html = extracted.group(0) if extracted else content
-        elif os.path.exists(png_file): plot_img = png_file
+        
+        # 战后搜山：如果查房成功生成了由 Plotly 构造的网页组件
+        if os.path.exists("sandbox_plot.html"):
+            with open("sandbox_plot.html", "r", encoding="utf-8") as f:
+                plot_html = f.read()
+        elif os.path.exists("sandbox_plot.png"):
+            plot_img = os.path.abspath("sandbox_plot.png")
 
         return {"success": success, "stdout": output_buffer.getvalue().strip(), "error": error_msg, "plot_html": plot_html, "plot_path": plot_img}
 
-    # 🌟 2D 分子也解禁原生图片，供长官随时放大和下载！
-    def generate_rdkit_2d(self, raw_target):
+    def generate_rdkit_2d_html(self, raw_target):
+        # 2D 依然使用原生的高清 Image 组件，所以给绝对路径
         try:
             from rdkit import Chem; from rdkit.Chem import Draw
             pure_smiles = max(re.findall(r'[A-Za-z0-9@+\-\[\]\.\(\)\=\#\/\\]{4,}', raw_target), key=len)
@@ -104,7 +113,6 @@ plt.savefig = _hijacked_savefig
             return path
         except: return None
 
-    # 后续 3D 和复合对接彻底稳定，全是 HTML
     def generate_docking_iframe(self, pdb_id, smiles):
         pdb = re.sub(r'[^a-zA-Z0-9]', '', pdb_id).lower()
         if len(pdb) > 4: pdb = pdb[-4:] 
@@ -152,20 +160,22 @@ plt.savefig = _hijacked_savefig
         
         final_prompt = str(user_message) + file_context
 
-        sys_prompt = f"""你是全球顶级 AI 科研主脑 BloClaw。你具有深度短时记忆。
+        # 🌟 铁令如山：你只管写，其他的我接管！！
+        sys_prompt = f"""你是全球顶级 AI 科研主脑 BloClaw。具备长时记忆关联。
 【最高行动法则】
 1. TEXT: 直接文本交互。
-2. PYTHON_SANDBOX: 非常鼓励！写跑代码并要求：如果是交互性质的数据（热图、气泡分布），强制要求使用 `import plotly.express as px` 或 graph_objects 等库渲染，它将具备超高级的鼠标浮放数值呈现特效！绝不允许执行保存或者 show 的指令。如果是普通的直角坐标折线图，可以放心用 matplotlib 随便画，系统后台会物理接管提取出所有图层送入前端。
+2. PYTHON_SANDBOX: ✨代码并在沙盒画图。🔥强烈要求：只要用户让你生成高级图表，你务必使用 `import plotly.express as px` !! 图表赋给变量 `fig` 即可！系统会在暗中直接劫持并投屏到界面右侧！绝不需要你写写入文件的繁杂步骤！
 3. 2D_MOLECULE: 写纯 SMILES 生成拓扑。
-4. 3D_PROTEIN: 展示已有大分子(仅限4位PDB)。
-5. FOLD_PROTEIN: 云端折叠未知生命晶体。
+4. 3D_PROTEIN: 展示已知自然分子(填4位PDB)。
+5. FOLD_PROTEIN: 云端折叠未知生命序列。
 6. MOLECULAR_DOCKING: 模拟重叠对接。填: [PDB纯编号]|||[SMILES纯序列]。
+7. CREATE_TOOL: 创建永久挂载的脚本工具名。
 
 必须完全且仅以此规矩输出四组XML：
 <thought>短思考</thought>
 <action>填入上面动作全大写</action>
-<target>动作的投喂纯参(代码/名字)</target>
-<reply>详实且优美的解析。</reply>"""
+<target>动作的投喂纯代码文字。</target>
+<reply>极其专业的解答。不必解释沙盒技术细节。</reply>"""
 
         llm_messages = [{"role": "system", "content": sys_prompt}]
         if memory_context:
@@ -196,7 +206,7 @@ plt.savefig = _hijacked_savefig
 
             final_md = f"*(**🧠 分析主干**: {thought})*\n\n{reply_md}"
             
-            # 🌟 两条纯净光路，各行其道
+            # 👇 这两兄弟将分别投向 HTML 渲染玻璃 和 纯图片放大画框！
             screen_html = None  
             screen_image = None
 
@@ -205,35 +215,42 @@ plt.savefig = _hijacked_savefig
                 if res['success']:
                     if res['stdout']: final_md += f"\n\n**🤖 沙盒终端报告**:\n```text\n{res['stdout']}\n```"
                     
+                    # 🌟 绝杀对接：拿到了 plotly 高级代码！立刻穿透 iframe 进入全屏隔离右舱！
                     if res['plot_html']:
-                        html_src = res['plot_html'].replace("`", "")
-                        screen_html = f"<div style='width:100%; height:100vh; overflow:hidden; background-color:#ffffff; border-radius:12px; box-shadow:0 6px 25px rgba(0,0,0,0.06);'><iframe srcdoc='{html.escape(html_src)}' style='width:100%; height:100%; border:none;' sandbox='allow-scripts allow-same-origin allow-popups'></iframe></div>"
-                        final_md += f"\n\n🟢 **宇宙机算已拉取无界交互层。该高维图表已推送至右面板，支持极限互动框选、全息抓取与存图。**"
-                    # 🌟 绝杀：如果是普通的静态老图，不再转成 HTML 死图，而是作为 Native Component 物理原图发出！！
+                        html_src = res['plot_html']
+                        # 利用强隔离的 srcdoc 和 allow-scripts 把互动效果拉满！
+                        screen_html = f"<div style='width:100%; height:100vh; overflow:hidden; background-color:#ffffff; border-radius:12px;'><iframe srcdoc='{html.escape(html_src)}' style='width:100%; height:100%; border:none;' sandbox='allow-scripts allow-same-origin allow-popups'></iframe></div>"
+                        final_md += f"\n\n🟢 **宇宙机算渲染完毕。底层 Plotly 拦截成功，可交互的高维图表已推送至右面板。**"
+                    # 最差情况：模型死活用了老图库，那也给它导出一张高清大片并允许下载放大！
                     elif res['plot_path']: 
                         screen_image = res['plot_path']
-                        final_md += f"\n\n🟢 **底层工作台运转完毕，无损原始底片已印制在右视窗供提取 (原画质提取可用)。**"
+                        final_md += f"\n\n🟢 **底层工作台运转完毕，无损原始静态底片已印制在右视窗供提取。**"
                 else: 
-                     final_md += f"\n*(❌ 沙盒崩溃)*\n```python-traceback\n{res['error']}\n```"
+                     final_md += f"\n*(❌ 沙盒崩溃反馈)*\n```python-traceback\n{res['error']}\n```"
 
             elif action == "2D_MOLECULE" and core_data: 
-                screen_image = self.generate_rdkit_2d(core_data)
-                
+                screen_image = self.generate_rdkit_2d_html(core_data)
             elif action == "3D_PROTEIN" and core_data: screen_html = self.generate_3d_iframe(core_data)
+            
             elif action == "FOLD_PROTEIN" and core_data:
                 seq = re.sub(r'[^A-Z]', '', core_data.upper())
                 api_resp = requests.post('https://api.esmatlas.com/foldSequence/v1/pdb/', data=seq, timeout=40)
                 if api_resp.status_code == 200:
                     screen_html = self.generate_3d_iframe(None, is_custom=True, pdb_str=api_resp.text)
+                    final_md += "\n\n🟢 **宇宙力场测算结束，实体投影已上传至视窗。**"
+
             elif action == "MOLECULAR_DOCKING" and "|||" in core_data:
                 parts = core_data.split("|||")
                 screen_html = self.generate_docking_iframe(parts[0].strip(), parts[1].strip())
+                final_md += f"\n\n🟢 **抗体与受体复合界面的 3D 重型对接轨道构像已布设完成。**"
+                
             elif action == "CREATE_TOOL":
                 parts = core_data.split("\n", 1)
                 if len(parts) >= 2:
                     tool_name = parts[0].strip().replace('.py', '')
                     os.makedirs(self.tools_path, exist_ok=True)
                     with open(os.path.join(self.tools_path, f"{tool_name}.py"), "w") as f: f.write(parts[1])
+                    final_md += f"\n\n💾 【数字生命突变】：系统磁盘新增执行脚本 `{tool_name}.py` 。该模组已合并至 BloClaw 主体代码！"
 
             return {"text": final_md, "screen_html": screen_html, "screen_image": screen_image}
             
