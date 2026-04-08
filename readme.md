@@ -15,6 +15,6 @@ While existings scientific agents dump fragile tools into a single context windo
 The easiest way to run BioClaw is via standard Python or Docker:
 
 ```bash
-git clone https://github.com/YOUR_GITHUB/BioClaw.git
+git clone https://github.com/qinheming/BloClaw.git
 cd BloClaw
 poetry install
