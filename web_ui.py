@@ -1,9 +1,13 @@
 import os
+import base64
 import gradio as gr
 from bioclaw.core.engine import BloClawCoordinator
 
 print("🚀 正在唤醒 BloClaw OS [真·沉浸纯粹去键无框版]...")
 engine = BloClawCoordinator()
+LOGO_PATH = os.path.join(os.path.dirname(__file__), "assets", "bloclaw-logo.jpg")
+with open(LOGO_PATH, "rb") as logo_file:
+    LOGO_DATA_URI = "data:image/jpeg;base64," + base64.b64encode(logo_file.read()).decode("ascii")
 
 saas_css = """
 <style>
@@ -18,6 +22,8 @@ footer { display: none !important; }
 
 /* 居中首屏Logo与神坛 */
 #welcome_mat { margin: auto !important; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;}
+#welcome_logo { width: 100% !important; display: flex !important; justify-content: center !important; margin: 0 auto 10px !important; }
+#welcome_logo img { width: 150px !important; height: 150px !important; aspect-ratio: 1 !important; object-fit: contain !important; display: block !important; }
 
 /* 强力不折行CSS卡片区 */
 #cards_row { flex-wrap: nowrap !important; display: flex !important; width: 100%; max-width: 1100px; margin: 0 auto; gap: 15px;}
@@ -51,6 +57,40 @@ footer { display: none !important; }
 
 /* 高级悬浮打断急停锁钮 */
 #stop_btn_container { position: absolute; top: -45px; z-index: 100; left: 50%; transform: translateX(-50%); }
+/* App1 visual language */
+:root { --app-canvas:#f5f7fb; --app-surface:#fff; --app-line:#d8e0ea; --app-line-strong:#bdc9d8; --app-text:#142033; --app-muted:#64748b; --app-accent:#087f8c; --app-navy:#132238; }
+body, .gradio-container { background:var(--app-canvas) !important; color:var(--app-text) !important; }
+.gradio-container { max-width:1440px !important; }
+#top_nav { background:var(--app-surface) !important; border-bottom:1px solid var(--app-line) !important; padding:16px 24px !important; }
+#top_nav button, #canvas_toolbar button { border:1px solid var(--app-line-strong) !important; border-radius:8px !important; background:var(--app-surface) !important; color:var(--app-navy) !important; box-shadow:none !important; }
+#top_nav button:hover, #canvas_toolbar button:hover { border-color:var(--app-accent) !important; background:#eefbfb !important; }
+#top_nav button.primary, .gradio-accordion button.primary { background:var(--app-accent) !important; border-color:var(--app-accent) !important; color:#fff !important; }
+#main_stage { padding:18px 24px !important; }
+#welcome_mat { max-width:1120px !important; gap:12px !important; }
+#welcome_logo { margin:0 auto 8px !important; }
+#welcome_logo img { width:150px !important; height:150px !important; }
+#welcome_mat h1 { color:var(--app-navy) !important; font-size:clamp(2rem, 4vw, 2.8rem) !important; }
+#welcome_mat .prose p { color:var(--app-accent) !important; }
+#cards_row { max-width:1120px !important; gap:10px !important; }
+#cards_row button { min-height:86px !important; border:1px solid var(--app-line) !important; border-radius:8px !important; background:var(--app-surface) !important; color:var(--app-text) !important; box-shadow:none !important; font-size:13px !important; font-weight:700 !important; text-align:left !important; transition:border-color .15s ease, background .15s ease !important; }
+#cards_row button:hover { border-color:#b9dcde !important; background:#eefbfb !important; transform:none !important; box-shadow:none !important; }
+#chat_panel { background:var(--app-surface) !important; border:1px solid var(--app-line) !important; border-radius:8px !important; }
+#chat_panel .message.user { background:#f1fbfb !important; border:1px solid #b4d9dd !important; border-radius:8px !important; color:var(--app-text) !important; box-shadow:none !important; }
+#canvas_panel { border:1px solid #b9dcde !important; border-radius:8px !important; background:#f8fafc !important; box-shadow:0 18px 42px rgba(19,34,56,.12) !important; }
+#canvas_toolbar { border-bottom:1px solid var(--app-line) !important; }
+.gradio-accordion { border:1px solid var(--app-line) !important; border-radius:8px !important; background:var(--app-surface) !important; margin:0 24px 4px !important; }
+.gradio-accordion input:focus, .gradio-accordion textarea:focus { border-color:var(--app-accent) !important; box-shadow:0 0 0 3px rgba(8,127,140,.14) !important; }
+#bottom_deck { padding:12px 24px 22px !important; background:var(--app-canvas) !important; }
+.inner-capsule { max-width:1120px !important; border:1px solid var(--app-line-strong) !important; border-radius:8px !important; background:var(--app-surface) !important; box-shadow:0 10px 24px rgba(19,34,56,.08) !important; padding:10px !important; }
+.inner-capsule:focus-within { border-color:var(--app-accent) !important; box-shadow:0 0 0 3px rgba(8,127,140,.14) !important; }
+@media (max-width:760px) {
+    #top_nav, #main_stage { padding-left:14px !important; padding-right:14px !important; }
+    #top_nav { flex-wrap:wrap !important; gap:8px !important; }
+    #cards_row { flex-wrap:wrap !important; }
+    #cards_row button { min-width:100% !important; }
+    .gradio-accordion { margin-left:14px !important; margin-right:14px !important; }
+    #bottom_deck { padding-left:14px !important; padding-right:14px !important; }
+}
 </style>
 """
 
@@ -169,7 +209,7 @@ with gr.Blocks(title="BloClaw OS") as demo:
 
     # ================= 🌌 顶置全局导航栏 =================
     with gr.Row(elem_id="top_nav"):
-        gr.Markdown("🧬 <span style='font-size:18px; font-weight:bold; color:#0f172a;'>BloClaw Hub.</span> <span style='font-size:13px;color:#64748b;'>The Ultimate Autonomous AI Scientist.</span>")
+        gr.Markdown("<span style='font-size:18px; font-weight:bold; color:#0f172a;'>BloClaw.</span> <span style='font-size:13px;color:#64748b;'>The Ultimate Autonomous AI Scientist.</span>")
         with gr.Row():
             toggle_panel_btn = gr.Button("◫ 切控视界幕布", variant="secondary", size="sm")
             new_chat_btn = gr.Button("➕ 构建新纪元", variant="primary", size="sm")
@@ -191,8 +231,12 @@ with gr.Blocks(title="BloClaw OS") as demo:
         
         # 居中神坛
         with gr.Column(elem_id="welcome_mat") as welcome_block:
-            gr.Markdown("<div style='font-size:3.5rem; margin-bottom:10px; text-align:center;'>🌌</div>")
-            gr.Markdown("<h1 style='font-size:2.8rem; color:#0f172a; margin:0; text-align:center;'>BloClaw Hub</h1>")
+            gr.HTML(
+                f'<div id="welcome_logo" style="width:100%;display:flex;justify-content:center;align-items:center;">'
+                f'<img src="{LOGO_DATA_URI}" alt="BloClaw Logo" width="150" height="150" '
+                'style="width:150px;height:150px;object-fit:contain;display:block;"></div>'
+            )
+            gr.Markdown("<h1 style='font-size:2.8rem; color:#0f172a; margin:0; text-align:center;'>BloClaw</h1>")
             # 🌟 使用了您指定的最具有极客深度的 Slogan！！
             gr.Markdown("<p style='color:#14b8a6; font-size:1.1rem; text-align:center; padding-bottom:30px; font-weight: 500;'>The Ultimate Autonomous AI4S Copilot.</p>")
             
