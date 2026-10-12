@@ -14,15 +14,42 @@ load_dotenv()
 
 class BloClawCoordinator:
     def __init__(self):
-        self.api_key = os.getenv("DOUBAO_API_KEY")
+        self.provider = "豆包"
+        self.api_key = os.getenv("DOUBAO_API_KEY", "")
         self.base_url = "https://ark.cn-beijing.volces.com/api/v3"
         self.model_name = os.getenv("DOUBAO_ENDPOINT", "ep-20250222165018-9xts8")
         if not self.api_key:
+            self.provider = "OpenAI / 兼容接口"
             self.api_key = os.getenv("OPENAI_API_KEY", "")
             self.base_url = "https://api.openai.com/v1"
             self.model_name = "gpt-3.5-turbo"
-        self.client = OpenAI(api_key=self.api_key, base_url=self.base_url)
+        self.client = self._build_client()
         self.tools_path = os.path.abspath("bioclaw/tools")
+
+    def _build_client(self):
+        # OpenAI-compatible local endpoints still require a non-empty SDK key.
+        return OpenAI(api_key=self.api_key or "local", base_url=self.base_url)
+
+    def configure_llm(self, provider, base_url, model_name, api_key=""):
+        provider = (provider or "自定义").strip()
+        base_url = (base_url or "").strip().rstrip("/")
+        model_name = (model_name or "").strip()
+        if not base_url.startswith(("http://", "https://")):
+            raise ValueError("API Base 必须以 http:// 或 https:// 开头")
+        if not model_name:
+            raise ValueError("模型名称不能为空")
+        if api_key and api_key.strip():
+            self.api_key = api_key.strip()
+        self.provider = provider
+        self.base_url = base_url
+        self.model_name = model_name
+        self.client = self._build_client()
+        return {
+            "provider": self.provider,
+            "base_url": self.base_url,
+            "model_name": self.model_name,
+            "has_api_key": bool(self.api_key),
+        }
 
     def clean_code(self, raw_code):
         if not raw_code: return ""

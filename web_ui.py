@@ -140,6 +140,28 @@ def close_right_panel():
 def put_text(text):
     return gr.update(value={"text": text, "files": []})
 
+
+LLM_PRESETS = {
+    "OpenAI / 兼容接口": "https://api.openai.com/v1",
+    "豆包": "https://ark.cn-beijing.volces.com/api/v3",
+    "OpenRouter": "https://openrouter.ai/api/v1",
+    "Ollama (本地)": "http://127.0.0.1:11434/v1",
+    "自定义": "",
+}
+
+
+def select_provider(provider):
+    return gr.update(value=LLM_PRESETS.get(provider, ""))
+
+
+def apply_llm_config(provider, base_url, model_name, api_key):
+    try:
+        config = engine.configure_llm(provider, base_url, model_name, api_key)
+        key_state = "已设置 API Key" if config["has_api_key"] else "未设置 API Key"
+        return f"已应用 {config['provider']} · {config['model_name']} · {key_state}", gr.update(value="")
+    except Exception as exc:
+        return f"配置未保存：{exc}", gr.update()
+
 with gr.Blocks(title="BloClaw OS") as demo:
     gr.HTML(saas_css, visible=False)
     task_payload = gr.State()
@@ -151,6 +173,18 @@ with gr.Blocks(title="BloClaw OS") as demo:
         with gr.Row():
             toggle_panel_btn = gr.Button("◫ 切控视界幕布", variant="secondary", size="sm")
             new_chat_btn = gr.Button("➕ 构建新纪元", variant="primary", size="sm")
+
+    with gr.Accordion("⚙ 模型 API 设置", open=False):
+        with gr.Row():
+            llm_provider = gr.Dropdown(
+                choices=list(LLM_PRESETS), value=engine.provider, label="服务商", scale=2
+            )
+            llm_base_url = gr.Textbox(value=engine.base_url, label="API Base", scale=4)
+            llm_model = gr.Textbox(value=engine.model_name, label="模型名称", scale=3)
+            llm_api_key = gr.Textbox(label="API Key（留空保持当前）", type="password", scale=3)
+        with gr.Row():
+            save_llm_btn = gr.Button("保存并应用", variant="primary", size="sm")
+            llm_status = gr.Markdown("当前使用启动配置。")
 
     # ================= 🌌 主干舞台 =================
     with gr.Column(elem_id="main_stage"):
@@ -203,6 +237,12 @@ with gr.Blocks(title="BloClaw OS") as demo:
     new_chat_btn.click(fn=reset_session, inputs=None, outputs=[chatbot, task_payload, welcome_block, workspace_block, right_panel, canvas_screen, user_input])
     toggle_panel_btn.click(fn=toggle_right_panel, inputs=[is_panel_open], outputs=[right_panel, is_panel_open])
     close_canvas_btn.click(fn=close_right_panel, inputs=None, outputs=[right_panel, is_panel_open])
+    llm_provider.change(fn=select_provider, inputs=[llm_provider], outputs=[llm_base_url])
+    save_llm_btn.click(
+        fn=apply_llm_config,
+        inputs=[llm_provider, llm_base_url, llm_model, llm_api_key],
+        outputs=[llm_status, llm_api_key],
+    )
 
     for btn, cmd in [(card1, cmd1), (card2, cmd2), (card3, cmd3)]:
         btn.click(fn=put_text, inputs=[cmd], outputs=[user_input]).then(
