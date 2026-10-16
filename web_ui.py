@@ -10,7 +10,6 @@ with open(LOGO_PATH, "rb") as logo_file:
     LOGO_DATA_URI = "data:image/jpeg;base64," + base64.b64encode(logo_file.read()).decode("ascii")
 
 saas_css = """
-<style>
 /* 整个页面纯净布局，最高限宽拉大，给左屏和光幕预留广袤空间 */
 :root, body, .gradio-container { background-color: #ffffff !important; max-width: 1400px !important; margin: 0 auto !important; font-family: -apple-system, system-ui, sans-serif !important; height: 100vh !important; display: flex; flex-direction: column; overflow: hidden; padding: 0 !important;}
 footer { display: none !important; }
@@ -91,7 +90,23 @@ body, .gradio-container { background:var(--app-canvas) !important; color:var(--a
     .gradio-accordion { margin-left:14px !important; margin-right:14px !important; }
     #bottom_deck { padding-left:14px !important; padding-right:14px !important; }
 }
-</style>
+
+/* app1 compact workbench proportions */
+#main_stage { overflow-y:auto !important; }
+#welcome_mat { margin:0 auto !important; padding:22px 0 10px !important; gap:8px !important; }
+#welcome_logo { margin:0 auto 2px !important; }
+#welcome_logo img { width:96px !important; height:96px !important; }
+#welcome_mat h1 { font-size:32px !important; line-height:1.15 !important; }
+#welcome_mat .prose p { font-size:15px !important; padding-bottom:10px !important; }
+#cards_row { align-items:stretch !important; }
+#cards_row button { min-height:76px !important; height:76px !important; padding:12px 16px !important; line-height:1.45 !important; white-space:normal !important; overflow-wrap:anywhere !important; }
+#bottom_deck { padding:10px 24px 18px !important; }
+#bottom_deck .inner-capsule { height:78px !important; min-height:78px !important; padding:8px 12px !important; }
+#bottom_deck .gradio-multimodal-textbox,
+#bottom_deck .gradio-multimodal-textbox > div,
+#bottom_deck .gradio-multimodal-textbox textarea { height:58px !important; min-height:58px !important; max-height:58px !important; }
+#bottom_deck .gradio-multimodal-textbox textarea { text-align:left !important; padding:12px 10px !important; line-height:1.45 !important; }
+#bottom_deck .gradio-multimodal-textbox { overflow:hidden !important; }
 """
 
 STANDBY_HTML = """
@@ -204,7 +219,6 @@ def apply_llm_config(provider, base_url, model_name, api_key):
         return f"配置未保存：{exc}", gr.update()
 
 with gr.Blocks(title="BloClaw OS") as demo:
-    gr.HTML(saas_css, visible=False)
     task_payload = gr.State()
     is_panel_open = gr.State(False) 
 
@@ -310,4 +324,4 @@ with gr.Blocks(title="BloClaw OS") as demo:
     stop_btn.click(fn=force_stop, inputs=None, outputs=[user_input, stop_btn], cancels=[sub_1])
 
 if __name__ == "__main__":
-    demo.launch(server_name="127.0.0.1", server_port=7860, inbrowser=True)
+    demo.launch(server_name="127.0.0.1", server_port=7860, inbrowser=True, css=saas_css)
