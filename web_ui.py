@@ -199,7 +199,7 @@ def apply_llm_config(provider, base_url, model_name, api_key):
     try:
         config = engine.configure_llm(provider, base_url, model_name, api_key)
         key_state = "已设置 API Key" if config["has_api_key"] else "未设置 API Key"
-        return f"已应用 {config['provider']} · {config['model_name']} · {key_state}", gr.update(value="")
+        return f"已应用 {config['provider']} · {config['model_name']} · {key_state}", gr.update()
     except Exception as exc:
         return f"配置未保存：{exc}", gr.update()
 
