@@ -1,4 +1,5 @@
 import os
+import json
 import re
 import io
 import html
@@ -70,6 +71,25 @@ class BloClawCoordinator:
         pattern = f"<{tag}>(.*?)</{tag}>"
         match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
         return match.group(1).strip() if match else ""
+
+    def response_text(self, response):
+        """Accept OpenAI objects plus plain-text/JSON responses from compatible gateways."""
+        if isinstance(response, str):
+            try:
+                response = json.loads(response)
+            except json.JSONDecodeError:
+                return response
+        if isinstance(response, dict):
+            choices = response.get("choices") or []
+            if choices:
+                message = choices[0].get("message", {})
+                return message.get("content", "") if isinstance(message, dict) else str(message)
+            return response.get("output_text", "") or response.get("content", "")
+        choices = getattr(response, "choices", None) or []
+        if not choices:
+            raise ValueError("模型响应缺少 choices/content 字段")
+        content = getattr(getattr(choices[0], "message", None), "content", None)
+        return content if isinstance(content, str) else str(content or "")
 
     def execute_sandbox(self, python_code):
         output_buffer = io.StringIO()
@@ -216,7 +236,7 @@ plt.rcParams['figure.figsize'] = (10, 6)
 
         try:
             resp = self.client.chat.completions.create(model=self.model_name, messages=llm_messages, temperature=0.1)
-            raw_text = resp.choices[0].message.content
+            raw_text = self.response_text(resp)
             
             action = self.extract_tag(raw_text, "action").upper()
             core_data = self.clean_code(self.extract_tag(raw_text, "target"))
