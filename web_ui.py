@@ -107,6 +107,12 @@ body, .gradio-container { background:var(--app-canvas) !important; color:var(--a
 #composer textarea { min-height:48px !important; height:48px !important; max-height:96px !important; width:100% !important; padding:12px !important; text-align:left !important; line-height:1.45 !important; }
 #file_input button { min-width:48px !important; width:48px !important; height:48px !important; border:1px solid var(--app-line-strong) !important; border-radius:8px !important; background:#fff !important; color:var(--app-navy) !important; font-size:20px !important; }
 #send_btn { min-width:48px !important; height:48px !important; border-radius:8px !important; background:var(--app-accent) !important; color:#fff !important; font-size:22px !important; }
+#top_nav > .gradio-row:last-child { gap:8px !important; }
+#top_nav > .gradio-row:last-child button { min-width:88px !important; height:40px !important; border-radius:8px !important; }
+#top_nav > .gradio-row:last-child button:first-child { min-width:64px !important; }
+#welcome_logo img { width:112px !important; height:112px !important; }
+#cards_row .matrix-card { min-height:94px !important; height:94px !important; border-radius:12px !important; background:linear-gradient(180deg,#fff,#f8fafc) !important; border:1px solid var(--app-line) !important; font-size:15px !important; font-weight:760 !important; text-align:center !important; }
+#cards_row .matrix-card:hover { border-color:#83cfe0 !important; background:#f0fbfc !important; transform:translateY(-2px) !important; }
 """
 
 STANDBY_HTML = """
@@ -222,18 +228,24 @@ def apply_llm_config(provider, base_url, model_name, api_key):
     except Exception as exc:
         return f"配置未保存：{exc}", gr.update()
 
+def open_llm_settings():
+    return gr.update(visible=True, open=True)
+
 with gr.Blocks(title="BloClaw OS") as demo:
     task_payload = gr.State()
     is_panel_open = gr.State(False) 
 
     # ================= 🌌 顶置全局导航栏 =================
     with gr.Row(elem_id="top_nav"):
-        gr.Markdown("<span style='font-size:18px; font-weight:bold; color:#0f172a;'>BloClaw.</span> <span style='font-size:13px;color:#64748b;'>The Ultimate Autonomous AI Scientist.</span>")
+        gr.Markdown("<span style='font-size:20px; font-weight:800; color:#142033;'>🧬 BloClaw Matrix</span>")
         with gr.Row():
-            toggle_panel_btn = gr.Button("◫ 切控视界幕布", variant="secondary", size="sm")
-            new_chat_btn = gr.Button("➕ 构建新纪元", variant="primary", size="sm")
+            lang_btn = gr.Button("EN", variant="secondary", size="sm")
+            config_btn = gr.Button("配置", variant="secondary", size="sm")
+            history_btn = gr.Button("历史", variant="secondary", size="sm")
+            new_chat_btn = gr.Button("新任务", variant="secondary", size="sm")
+            toggle_panel_btn = gr.Button("更多", variant="secondary", size="sm")
 
-    with gr.Accordion("⚙ 模型 API 设置", open=False):
+    with gr.Accordion("模型 API 设置", open=False, visible=False) as llm_settings:
         with gr.Row():
             llm_provider = gr.Dropdown(
                 choices=list(LLM_PRESETS), value=engine.provider, label="服务商", scale=2
@@ -255,18 +267,21 @@ with gr.Blocks(title="BloClaw OS") as demo:
                 f'<img src="{LOGO_DATA_URI}" alt="BloClaw Logo" width="150" height="150" '
                 'style="width:150px;height:150px;object-fit:contain;display:block;"></div>'
             )
-            gr.Markdown("<h1 style='font-size:2.8rem; color:#0f172a; margin:0; text-align:center;'>BloClaw</h1>")
-            # 🌟 使用了您指定的最具有极客深度的 Slogan！！
-            gr.Markdown("<p style='color:#14b8a6; font-size:1.1rem; text-align:center; padding-bottom:30px; font-weight: 500;'>The Ultimate Autonomous AI4S Copilot.</p>")
+            gr.Markdown("<h1 style='font-size:3.1rem; color:#0f172a; margin:0; text-align:center;'>BloClaw Matrix</h1>")
+            gr.Markdown("<p style='color:#1d9bf0; font-size:1.15rem; text-align:center; padding-bottom:24px; font-weight:700;'>AI4S 超级智能工作站</p>")
             
             with gr.Row(elem_id="cards_row"):
-                card1 = gr.Button("💊 药物 2D 与靶标对接\n\n一键计算氟西汀并完成受体推演。", elem_classes="bg-white border shadow-sm rounded-xl p-4 text-left font-bold")
-                card2 = gr.Button("🌌 虚空测算 3D 生命螺旋\n\n云端折叠预测未知序列的蛋白质空间力场。", elem_classes="bg-white border shadow-sm rounded-xl p-4 text-left font-bold")
-                card3 = gr.Button("📊 Agent 沙盘数据绘图\n\n编写代码驱动数据逻辑斯蒂网络极限公式。", elem_classes="bg-white border shadow-sm rounded-xl p-4 text-left font-bold")
+                card1 = gr.Button("创新药研发", elem_classes="matrix-card")
+                card2 = gr.Button("生物信息与组学分析", elem_classes="matrix-card")
+                card3 = gr.Button("医学与科研写作", elem_classes="matrix-card")
+                card4 = gr.Button("科研情报与证据检索", elem_classes="matrix-card")
+                card5 = gr.Button("项目管理与实验闭环", elem_classes="matrix-card")
 
             cmd1 = gr.Textbox(value="帮我画出抗抑郁药氟西汀的二维分子图，SMILES：CNCCC(c1ccccc1)Oc2ccc(cc2)C(F)(F)F", visible=False)
             cmd2 = gr.Textbox(value="计算这串未知生命序列的三维折叠与力场：MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMF", visible=False)
             cmd3 = gr.Textbox(value="使用 numpy 为我设计一整套生物种群繁衍和演进数据的『逻辑斯蒂回归热力图 (Logistic Growth)』，并用 plotly 或 seaborn 等在沙盒生成高质图线供我研究（不能有废话！必含图源结果！）。", visible=False)
+            cmd4 = gr.Textbox(value="检索并整理一个科研主题的最新证据、关键文献和验证路径。", visible=False)
+            cmd5 = gr.Textbox(value="为当前项目建立实验计划、里程碑、风险清单和可复核交付记录。", visible=False)
 
         # 隐藏的双轨列阵，聊天时原地现身！
         with gr.Row(visible=False) as workspace_block:
@@ -305,13 +320,14 @@ with gr.Blocks(title="BloClaw OS") as demo:
     toggle_panel_btn.click(fn=toggle_right_panel, inputs=[is_panel_open], outputs=[right_panel, is_panel_open])
     close_canvas_btn.click(fn=close_right_panel, inputs=None, outputs=[right_panel, is_panel_open])
     llm_provider.change(fn=select_provider, inputs=[llm_provider], outputs=[llm_base_url])
+    config_btn.click(fn=open_llm_settings, inputs=None, outputs=[llm_settings])
     save_llm_btn.click(
         fn=apply_llm_config,
         inputs=[llm_provider, llm_base_url, llm_model, llm_api_key],
         outputs=[llm_status, llm_api_key],
     )
 
-    for btn, cmd in [(card1, cmd1), (card2, cmd2), (card3, cmd3)]:
+    for btn, cmd in [(card1, cmd1), (card2, cmd2), (card3, cmd3), (card4, cmd4), (card5, cmd5)]:
         btn.click(fn=put_text, inputs=[cmd], outputs=[user_input]).then(
             fn=prepare_task, inputs=[user_input, file_input, chatbot], outputs=[user_input, file_input, chatbot, welcome_block, workspace_block, stop_btn, task_payload], queue=False
         ).then(
