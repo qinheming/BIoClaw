@@ -253,7 +253,7 @@ with gr.Blocks(title="BloClaw OS") as demo:
         # 隐藏的双轨列阵，聊天时原地现身！
         with gr.Row(visible=False) as workspace_block:
             with gr.Column(scale=6):
-                chatbot = gr.Chatbot(show_label=False, container=False, elem_id="chat_panel")
+                chatbot = gr.Chatbot(show_label=False, container=False, elem_id="chat_panel", type="messages")
                 
             with gr.Column(scale=5, visible=False, elem_id="canvas_panel") as right_panel:
                 with gr.Row(elem_id="canvas_toolbar"):
