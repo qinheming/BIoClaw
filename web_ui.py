@@ -102,7 +102,11 @@ body, .gradio-container { background:var(--app-canvas) !important; color:var(--a
 #cards_row button { min-height:76px !important; height:76px !important; padding:12px 16px !important; line-height:1.45 !important; white-space:normal !important; overflow-wrap:anywhere !important; }
 #bottom_deck { padding:10px 24px 18px !important; }
 #bottom_deck .inner-capsule { min-height:0 !important; height:auto !important; padding:8px 12px !important; }
-#bottom_deck textarea { text-align:left !important; line-height:1.45 !important; }
+#composer { min-height:80px !important; height:80px !important; }
+#composer > div { align-items:center !important; }
+#composer textarea { min-height:48px !important; height:48px !important; max-height:96px !important; width:100% !important; padding:12px !important; text-align:left !important; line-height:1.45 !important; }
+#file_input button { min-width:48px !important; width:48px !important; height:48px !important; border:1px solid var(--app-line-strong) !important; border-radius:8px !important; background:#fff !important; color:var(--app-navy) !important; font-size:20px !important; }
+#send_btn { min-width:48px !important; height:48px !important; border-radius:8px !important; background:var(--app-accent) !important; color:#fff !important; font-size:22px !important; }
 """
 
 STANDBY_HTML = """
@@ -119,17 +123,18 @@ def reset_session():
     return (
         [], None,
         gr.update(visible=True), gr.update(visible=False), gr.update(visible=False),
-        STANDBY_HTML, 
-        gr.update(value={"text": "", "files": []}, interactive=True, placeholder="💡 核心数据已卸载。开始新项目...")
+        STANDBY_HTML,
+        gr.update(value="", interactive=True, placeholder="💡 输入研究任务…"),
+        gr.update(value=None),
     )
 
-def prepare_task(user_data, history):
-    text = user_data.get("text", "")
-    files = user_data.get("files", [])
+def prepare_task(text, files, history):
+    text = text or ""
+    files = files or []
     
     if not text.strip() and not files:
         empty_payload = {"pure_text": "", "pure_files": []}
-        return gr.update(), history, gr.update(), gr.update(), gr.update(), empty_payload
+        return gr.update(), gr.update(), history, gr.update(), gr.update(), gr.update(), empty_payload
         
     if history is None: history = []
     
@@ -145,8 +150,9 @@ def prepare_task(user_data, history):
     payload = {"pure_text": text, "pure_files": files}
     
     return (
-        gr.update(value={"text": "", "files": []}, interactive=False, placeholder="⏳ 交互已被底座冻结锁死，待引擎归零..."), 
-        history, 
+        gr.update(value="", interactive=False, placeholder="⏳ 正在处理…"),
+        gr.update(value=None),
+        history,
         gr.update(visible=False),  # welcome_block (隐藏大 Logo)
         gr.update(visible=True),   # workspace_block (展现聊天瀑布)
         gr.update(visible=True),   # stop_btn (浮现红区悬浮按键！)
@@ -155,7 +161,7 @@ def prepare_task(user_data, history):
 
 def execute_task(history, payload):
     if not payload: 
-        yield history, gr.skip(), gr.skip(), gr.update(interactive=True, placeholder="💡 下达新的指令参数..."), gr.update(visible=False); return
+        yield history, gr.skip(), gr.skip(), gr.update(interactive=True), gr.update(), gr.update(visible=False); return
     
     safe_text = payload["pure_text"] if payload["pure_text"] else "提取文档结构并归纳"
     
@@ -172,13 +178,15 @@ def execute_task(history, payload):
         history, 
         gr.update(visible=True) if should_open else gr.update(visible=False), 
         gr.update(value=new_html) if should_open else gr.skip(),
-        gr.update(interactive=True, placeholder="💡 给 BloClaw 持续发送新指令..."),
+        gr.update(interactive=True, placeholder="💡 输入研究任务…"),
+        gr.update(value=None),
         gr.update(visible=False) # 红色急停钮隐匿！
     )
 
 def force_stop():
     return (
-        gr.update(interactive=True, placeholder="🛑 已中断主脑。给 BloClaw 准备新指令..."),
+        gr.update(interactive=True, placeholder="🛑 已中断，输入新任务…"),
+        gr.update(value=None),
         gr.update(visible=False)
     )
 
@@ -282,18 +290,18 @@ with gr.Blocks(title="BloClaw OS") as demo:
         with gr.Row(elem_id="stop_btn_container"):
             stop_btn = gr.Button("■ 强制剥离底层渲染 (Stop)", variant="stop", visible=False, size="sm")
 
-        with gr.Group(elem_classes="inner-capsule"):
+        with gr.Group(elem_id="composer", elem_classes="inner-capsule"):
             with gr.Row(equal_height=True, elem_classes="items-center w-full h-full"):
-                # 🌟 绝绝子：剥壳纯去边框的用户无缝输入舱，彻底除掉原生恶心多余右按钮！！
-                user_input = gr.MultimodalTextbox(
-                    scale=9, show_label=False, 
-                    placeholder="💡 解析文件数据、上传 PDF 等；直接键入指令进行 2D构象 / 3D全息分析 (Enter发送)",
-                    container=False, lines=1, max_lines=1
+                file_input = gr.UploadButton("📎", file_count="multiple", file_types=[".pdf", ".txt", ".csv", ".md", ".xlsx", ".xls"], type="filepath", size="sm", scale=1, min_width=48, elem_id="file_input")
+                user_input = gr.Textbox(
+                    scale=8, show_label=False, container=False, lines=1, max_lines=3,
+                    placeholder="💡 输入研究任务…",
                 )
+                send_btn = gr.Button("↑", variant="primary", elem_id="send_btn", scale=1, min_width=48)
 
 
     # ================= 🚀 数据流与雷达绑定 =================
-    new_chat_btn.click(fn=reset_session, inputs=None, outputs=[chatbot, task_payload, welcome_block, workspace_block, right_panel, canvas_screen, user_input])
+    new_chat_btn.click(fn=reset_session, inputs=None, outputs=[chatbot, task_payload, welcome_block, workspace_block, right_panel, canvas_screen, user_input, file_input])
     toggle_panel_btn.click(fn=toggle_right_panel, inputs=[is_panel_open], outputs=[right_panel, is_panel_open])
     close_canvas_btn.click(fn=close_right_panel, inputs=None, outputs=[right_panel, is_panel_open])
     llm_provider.change(fn=select_provider, inputs=[llm_provider], outputs=[llm_base_url])
@@ -305,19 +313,25 @@ with gr.Blocks(title="BloClaw OS") as demo:
 
     for btn, cmd in [(card1, cmd1), (card2, cmd2), (card3, cmd3)]:
         btn.click(fn=put_text, inputs=[cmd], outputs=[user_input]).then(
-            fn=prepare_task, inputs=[user_input, chatbot], outputs=[user_input, chatbot, welcome_block, workspace_block, stop_btn, task_payload], queue=False
+            fn=prepare_task, inputs=[user_input, file_input, chatbot], outputs=[user_input, file_input, chatbot, welcome_block, workspace_block, stop_btn, task_payload], queue=False
         ).then(
-            fn=execute_task, inputs=[chatbot, task_payload], outputs=[chatbot, right_panel, canvas_screen, user_input, stop_btn]
+            fn=execute_task, inputs=[chatbot, task_payload], outputs=[chatbot, right_panel, canvas_screen, user_input, file_input, stop_btn]
         )
 
     # 唯一的管线输出渠道，直接由大文本框组件敲回车引发！
     sub_1 = user_input.submit(
-        fn=prepare_task, inputs=[user_input, chatbot], outputs=[user_input, chatbot, welcome_block, workspace_block, stop_btn, task_payload], queue=False
+        fn=prepare_task, inputs=[user_input, file_input, chatbot], outputs=[user_input, file_input, chatbot, welcome_block, workspace_block, stop_btn, task_payload], queue=False
     ).then(
-        fn=execute_task, inputs=[chatbot, task_payload], outputs=[chatbot, right_panel, canvas_screen, user_input, stop_btn]
+        fn=execute_task, inputs=[chatbot, task_payload], outputs=[chatbot, right_panel, canvas_screen, user_input, file_input, stop_btn]
+    )
+
+    send_btn.click(
+        fn=prepare_task, inputs=[user_input, file_input, chatbot], outputs=[user_input, file_input, chatbot, welcome_block, workspace_block, stop_btn, task_payload], queue=False
+    ).then(
+        fn=execute_task, inputs=[chatbot, task_payload], outputs=[chatbot, right_panel, canvas_screen, user_input, file_input, stop_btn]
     )
     
-    stop_btn.click(fn=force_stop, inputs=None, outputs=[user_input, stop_btn], cancels=[sub_1])
+    stop_btn.click(fn=force_stop, inputs=None, outputs=[user_input, file_input, stop_btn], cancels=[sub_1])
 
 if __name__ == "__main__":
     demo.launch(server_name="127.0.0.1", server_port=7860, inbrowser=True, css=saas_css)
