@@ -101,12 +101,8 @@ body, .gradio-container { background:var(--app-canvas) !important; color:var(--a
 #cards_row { align-items:stretch !important; }
 #cards_row button { min-height:76px !important; height:76px !important; padding:12px 16px !important; line-height:1.45 !important; white-space:normal !important; overflow-wrap:anywhere !important; }
 #bottom_deck { padding:10px 24px 18px !important; }
-#bottom_deck .inner-capsule { height:78px !important; min-height:78px !important; padding:8px 12px !important; }
-#bottom_deck .gradio-multimodal-textbox,
-#bottom_deck .gradio-multimodal-textbox > div,
-#bottom_deck .gradio-multimodal-textbox textarea { height:58px !important; min-height:58px !important; max-height:58px !important; }
-#bottom_deck .gradio-multimodal-textbox textarea { text-align:left !important; padding:12px 10px !important; line-height:1.45 !important; }
-#bottom_deck .gradio-multimodal-textbox { overflow:hidden !important; }
+#bottom_deck .inner-capsule { min-height:0 !important; height:auto !important; padding:8px 12px !important; }
+#bottom_deck textarea { text-align:left !important; line-height:1.45 !important; }
 """
 
 STANDBY_HTML = """
@@ -292,7 +288,7 @@ with gr.Blocks(title="BloClaw OS") as demo:
                 user_input = gr.MultimodalTextbox(
                     scale=9, show_label=False, 
                     placeholder="💡 解析文件数据、上传 PDF 等；直接键入指令进行 2D构象 / 3D全息分析 (Enter发送)",
-                    container=False, lines=1
+                    container=False, lines=1, max_lines=1
                 )
 
 
