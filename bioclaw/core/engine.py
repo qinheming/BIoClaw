@@ -148,7 +148,13 @@ plt.rcParams['figure.figsize'] = (10, 6)
             Draw.MolToFile(mol, path, size=(800, 600))
             with open(path, "rb") as f: b64 = base64.b64encode(f.read()).decode('utf-8')
             return f"<div style='height:100vh; display:flex; align-items:center; justify-content:center; background:#fafafa;'><img src='data:image/png;base64,{b64}' style='max-width:98%; max-height:98%; border-radius:12px; box-shadow:0 6px 25px rgba(0,0,0,0.08); border:1px solid #e5e7eb; background:white; padding:10px;'></div>"
-        except: return None
+        except Exception as exc:
+            message = html.escape(f"2D 分子图生成失败：{exc}")
+            return (
+                "<div style='height:100%;display:flex;align-items:center;justify-content:center;"
+                "padding:24px;color:#b42318;background:#fff5f4;font-family:system-ui;'>"
+                f"{message}</div>"
+            )
 
     def generate_docking_iframe(self, pdb_id, smiles):
         pdb = re.sub(r'[^a-zA-Z0-9]', '', pdb_id).lower()
