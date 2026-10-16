@@ -51,6 +51,13 @@ class BloClawCoordinator:
             "has_api_key": bool(self.api_key),
         }
 
+    def route_task(self, user_prompt, target_data=None):
+        """Keep the CLI demo contract while reusing the chat router."""
+        prompt = str(user_prompt or "")
+        if target_data:
+            prompt = f"{prompt}\n目标数据：{target_data}"
+        return self.process_chat(prompt)
+
     def clean_code(self, raw_code):
         if not raw_code: return ""
         code = raw_code.strip()

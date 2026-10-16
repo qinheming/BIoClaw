@@ -3,11 +3,11 @@ from Bio.Seq import Seq
 
 class OmicsAgent:
     """
-    BioClaw 多组学微智能体。
+    BloClaw 多组学微智能体。
     专职处理 DNA/RNA 序列、蛋白质翻译、基因突变分析等生物信息学核心任务。
     """
     def __init__(self):
-        self.agent_name = "BioClaw-Omics-MicroAgent"
+        self.agent_name = "BloClaw-Omics-MicroAgent"
 
     def analyze_sequence(self, sequence_str: str) -> str:
         """

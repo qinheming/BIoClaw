@@ -5,7 +5,7 @@ from rdkit.Chem import Descriptors, Lipinski, Draw
 
 class ChemAgent:
     def __init__(self):
-        self.agent_name = "BioClaw-Chem-MicroAgent"
+        self.agent_name = "BloClaw-Chem-MicroAgent"
 
     def evaluate_molecule(self, smiles_str: str) -> dict:
         try:

@@ -116,8 +116,9 @@ def prepare_task(user_data, history):
     text = user_data.get("text", "")
     files = user_data.get("files", [])
     
-    if not text.strip() and not files: 
-        return gr.update(), history, gr.update(), gr.update(), gr.update(), payload
+    if not text.strip() and not files:
+        empty_payload = {"pure_text": "", "pure_files": []}
+        return gr.update(), history, gr.update(), gr.update(), gr.update(), empty_payload
         
     if history is None: history = []
     
