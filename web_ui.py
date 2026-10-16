@@ -105,6 +105,15 @@ footer { display:none !important; }
     border:1px solid #b9dcde !important; border-radius:12px !important; background:#fff !important;
     box-shadow:0 18px 42px rgba(19,34,56,.12) !important; height:72vh !important;
     overflow:hidden !important; display:flex !important; flex-direction:column !important;
+    flex-wrap:nowrap !important; min-height:0 !important;
+}
+#canvas_panel > div:last-child {
+    width:100% !important; min-width:0 !important; min-height:0 !important;
+    flex:1 1 auto !important; overflow:hidden !important;
+}
+#canvas_panel .html-container, #canvas_panel .html-container > .prose {
+    width:100% !important; height:100% !important; min-height:0 !important;
+    overflow:hidden !important;
 }
 #canvas_toolbar {
     border-bottom:1px solid var(--app-line) !important; padding:8px 12px !important;

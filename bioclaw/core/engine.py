@@ -220,7 +220,7 @@ plt.rcParams['figure.figsize'] = (10, 6)
             path = os.path.abspath("temp_mol.png")
             Draw.MolToFile(mol, path, size=(800, 600))
             with open(path, "rb") as f: b64 = base64.b64encode(f.read()).decode('utf-8')
-            return f"<div style='height:100vh; display:flex; align-items:center; justify-content:center; background:#fafafa;'><img src='data:image/png;base64,{b64}' style='max-width:98%; max-height:98%; border-radius:12px; box-shadow:0 6px 25px rgba(0,0,0,0.08); border:1px solid #e5e7eb; background:white; padding:10px;'></div>"
+            return f"<div style='width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#fafafa;'><img src='data:image/png;base64,{b64}' style='max-width:98%; max-height:98%; border-radius:12px; box-shadow:0 6px 25px rgba(0,0,0,0.08); border:1px solid #e5e7eb; background:white; padding:10px;'></div>"
         except Exception as exc:
             message = html.escape(f"2D 分子图生成失败：{exc}")
             return (
@@ -240,19 +240,19 @@ plt.rcParams['figure.figsize'] = (10, 6)
             sdf_block = Chem.MolToMolBlock(m)
             b64_sdf = base64.b64encode(sdf_block.encode('utf-8')).decode('utf-8')
             script = f"var v = $3Dmol.createViewer('g', {{backgroundColor:'#ffffff'}}); $3Dmol.download('pdb:{pdb}', v, {{}}, function() {{ v.setStyle({{}}, {{cartoon: {{color: 'spectrum', opacity: 0.6}}}}); var sdf_data = atob('{b64_sdf}'); v.addModel(sdf_data, 'sdf'); v.setStyle({{model: -1}}, {{stick: {{colorscheme: 'greenCarbon', radius: 0.3}}, sphere: {{radius: 0.6}}}}); v.zoomTo(); v.render(); }});"
-            html_src = f"<html><head><script src='https://3Dmol.csb.pitt.edu/build/3Dmol-min.js'></script></head><body style='margin:0;'><div id='g' style='width:100vw; height:100vh;'></div><script>{script}</script></body></html>"
-            return f"<iframe srcdoc='{html.escape(html_src)}' style='width:100%; height:100vh; border:none;'></iframe>"
-        except Exception as e: return f"<div style='height:100vh; display:flex; align-items:center; justify-content:center; color:#ef4444; font-family:monospace; background:#fef2f2; padding:20px;'><br>{str(e)}</div>"
+            html_src = f"<html><head><style>html,body,#g{{width:100%;height:100%;margin:0;overflow:hidden;}}</style><script src='https://3Dmol.csb.pitt.edu/build/3Dmol-min.js'></script></head><body><div id='g'></div><script>{script}</script></body></html>"
+            return f"<iframe srcdoc='{html.escape(html_src)}' style='width:100%; height:100%; border:none;'></iframe>"
+        except Exception as e: return f"<div style='width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:#ef4444; font-family:monospace; background:#fef2f2; padding:20px;'><br>{str(e)}</div>"
 
     def generate_3d_iframe(self, core_data, is_custom=False, pdb_str=None):
         if not is_custom:
             pdb = re.sub(r'[^a-zA-Z0-9]', '', core_data).lower()
-            return f"<iframe src='https://3dmol.csb.pitt.edu/viewer.html?pdb={pdb}&style=cartoon;color:spectrum&spin=true&bcolor=ffffff' style='width:100%; height:100vh; border:none;'></iframe>"
+            return f"<iframe src='https://3dmol.csb.pitt.edu/viewer.html?pdb={pdb}&style=cartoon;color:spectrum&spin=true&bcolor=ffffff' style='width:100%; height:100%; border:none;'></iframe>"
         else:
             escaped_pdb = pdb_str.replace("`", "")
             script = f"var v = $3Dmol.createViewer('g', {{backgroundColor:'#ffffff'}}); v.addModel(`{escaped_pdb}`, 'pdb'); v.setStyle({{}}, {{cartoon:{{color:'spectrum'}}}}); v.zoomTo(); v.render();"
-            html_src = f"<html><head><script src='https://3Dmol.csb.pitt.edu/build/3Dmol-min.js'></script></head><body style='margin:0;'><div id='g' style='width:100vw; height:100vh;'></div><script>{script}</script></body></html>"
-            return f"<iframe srcdoc='{html.escape(html_src)}' style='width:100%; height:100vh; border:none;'></iframe>"
+            html_src = f"<html><head><style>html,body,#g{{width:100%;height:100%;margin:0;overflow:hidden;}}</style><script src='https://3Dmol.csb.pitt.edu/build/3Dmol-min.js'></script></head><body><div id='g'></div><script>{script}</script></body></html>"
+            return f"<iframe srcdoc='{html.escape(html_src)}' style='width:100%; height:100%; border:none;'></iframe>"
 
     def process_chat(self, user_message, uploaded_files=None, memory_context=None):
         file_context = ""
