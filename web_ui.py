@@ -3,116 +3,155 @@ import base64
 import gradio as gr
 from bioclaw.core.engine import BloClawCoordinator
 
-print("🚀 正在唤醒 BloClaw OS [真·沉浸纯粹去键无框版]...")
+print("🚀 正在唤醒 BloClaw OS ...")
 engine = BloClawCoordinator()
 LOGO_PATH = os.path.join(os.path.dirname(__file__), "assets", "bloclaw-logo.jpg")
 with open(LOGO_PATH, "rb") as logo_file:
     LOGO_DATA_URI = "data:image/jpeg;base64," + base64.b64encode(logo_file.read()).decode("ascii")
 
+# ================= 🎨 单一连贯样式表 =================
+# 说明：此前这里堆叠了三代互相覆盖的 CSS（背景/最大宽度/logo 尺寸/输入框被重复定义多次），
+# 现在合并为一套 App1 的青灰-深蓝视觉语言，避免数值互相打架。
 saas_css = """
-/* 整个页面纯净布局，最高限宽拉大，给左屏和光幕预留广袤空间 */
-:root, body, .gradio-container { background-color: #ffffff !important; max-width: 1400px !important; margin: 0 auto !important; font-family: -apple-system, system-ui, sans-serif !important; height: 100vh !important; display: flex; flex-direction: column; overflow: hidden; padding: 0 !important;}
-footer { display: none !important; }
-
-/* 顶置导航 */
-#top_nav { border-bottom: 1px solid #f3f4f6 !important; padding: 10px 25px !important; align-items: center !important; flex-shrink: 0 !important; }
-
-#main_stage { flex-grow: 1 !important; overflow-y: auto !important; display: flex; flex-direction: column; padding: 2vh 2%; }
-
-/* 居中首屏Logo与神坛 */
-#welcome_mat { margin: auto !important; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;}
-#welcome_logo { width: 100% !important; display: flex !important; justify-content: center !important; margin: 0 auto 10px !important; }
-#welcome_logo img { width: 150px !important; height: 150px !important; aspect-ratio: 1 !important; object-fit: contain !important; display: block !important; }
-
-/* 强力不折行CSS卡片区 */
-#cards_row { flex-wrap: nowrap !important; display: flex !important; width: 100%; max-width: 1100px; margin: 0 auto; gap: 15px;}
-.task-card {
-    background: #ffffff !important; border: 1px solid #e0f2fe !important; border-radius: 12px !important; padding: 12px 15px !important; 
-    cursor: pointer !important; transition: all 0.2s ease !important; flex: 1 !important; text-align: left !important; box-shadow: 0 2px 10px rgba(0,0,0,0.02) !important;
+:root {
+    --app-canvas:#f5f7fb; --app-surface:#ffffff; --app-line:#d8e0ea;
+    --app-line-strong:#bdc9d8; --app-text:#142033; --app-muted:#64748b;
+    --app-accent:#087f8c; --app-accent-soft:#eefbfb; --app-navy:#132238;
 }
-.task-card:hover { border-color: #0ea5e9 !important; box-shadow: 0 8px 20px rgba(14,165,233,0.1) !important; transform: translateY(-3px) !important; }
 
-/* 聊天气泡去边框化 */
-#chat_panel { background: transparent !important; border: none !important; margin-right: 15px !important; height: 100% !important; overflow-y: auto !important; }
-.message.user { border: none !important; background: #f1f5f9 !important; color: #0f172a !important; border-radius: 18px !important; padding: 12px 18px !important; margin-left: auto !important; max-width: 85% !important; box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;}
-.message.bot { border: none !important; background: transparent !important; color: #1e293b !important; padding: 12px 0 12px 15px !important; margin-bottom: 20px !important; max-width: 100% !important; }
+/* —— 整体外壳 —— */
+.gradio-container {
+    max-width:1280px !important; margin:0 auto !important;
+    background:var(--app-canvas) !important; color:var(--app-text) !important;
+    font-family:-apple-system, system-ui, "Segoe UI", sans-serif !important;
+    min-height:100vh !important; display:flex !important; flex-direction:column !important;
+    padding:0 !important;
+}
+footer { display:none !important; }
 
-/* 右侧全景物理室光幕 */
-#canvas_panel { background: #ffffff !important; border: 1px solid #cbd5e1 !important; border-radius: 12px; height: 75vh !important; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.04) !important; display: flex; flex-direction: column; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-#canvas_toolbar { border-bottom: 1px solid #f1f5f9; padding: 8px 12px; align-items: center; background: #ffffff; }
+/* —— 顶部导航 —— */
+#top_nav {
+    background:var(--app-surface) !important; border-bottom:1px solid var(--app-line) !important;
+    padding:12px 24px !important; align-items:center !important; flex-shrink:0 !important;
+    justify-content:space-between !important; flex-wrap:wrap !important; gap:8px !important;
+}
+#top_nav button {
+    min-width:84px !important; height:38px !important;
+    border:1px solid var(--app-line-strong) !important; border-radius:8px !important;
+    background:var(--app-surface) !important; color:var(--app-navy) !important;
+    box-shadow:none !important; font-weight:600 !important;
+}
+#top_nav button:hover { border-color:var(--app-accent) !important; background:var(--app-accent-soft) !important; }
 
-/* 🌟 底沉无界限胶囊输入舱，完全抛弃额外按钮组 */
+/* —— 模型设置折叠面板 —— */
+.gradio-accordion {
+    border:1px solid var(--app-line) !important; border-radius:8px !important;
+    background:var(--app-surface) !important; margin:8px 24px 0 !important;
+}
+.gradio-accordion input:focus, .gradio-accordion textarea:focus {
+    border-color:var(--app-accent) !important; box-shadow:0 0 0 3px rgba(8,127,140,.14) !important;
+}
+.gradio-accordion button.primary { background:var(--app-accent) !important; border-color:var(--app-accent) !important; color:#fff !important; }
+
+/* —— 主干舞台 —— */
+#main_stage {
+    flex:1 1 auto !important; overflow-y:auto !important; padding:20px 24px !important;
+    display:flex; flex-direction:column;
+}
+
+/* —— 首屏欢迎 —— */
+#welcome_mat {
+    margin:auto !important; width:100%; max-width:1040px;
+    display:flex; flex-direction:column; align-items:center; gap:10px;
+}
+#welcome_logo { display:flex !important; justify-content:center !important; margin:0 auto 4px !important; }
+#welcome_logo img { width:104px !important; height:104px !important; object-fit:contain !important; display:block !important; }
+#welcome_mat h1 {
+    margin:0 !important; text-align:center !important; color:var(--app-navy) !important;
+    font-size:34px !important; line-height:1.15 !important; font-weight:800 !important;
+}
+#welcome_mat .prose p {
+    margin:0 !important; text-align:center !important; color:var(--app-accent) !important;
+    font-size:15px !important; font-weight:600 !important; padding-bottom:12px !important;
+}
+
+/* —— 任务卡片：桌面不折行，移动端折行 —— */
+#cards_row { display:flex !important; flex-wrap:nowrap !important; width:100%; gap:12px; align-items:stretch; }
+#cards_row button {
+    flex:1 1 0 !important; min-height:88px !important;
+    border:1px solid var(--app-line) !important; border-radius:12px !important;
+    background:linear-gradient(180deg,#fff,#f8fafc) !important; color:var(--app-text) !important;
+    box-shadow:none !important; font-size:14px !important; font-weight:700 !important;
+    text-align:center !important; line-height:1.4 !important; padding:12px 14px !important;
+    white-space:normal !important; overflow-wrap:anywhere !important;
+    transition:border-color .15s ease, background .15s ease, transform .15s ease !important;
+}
+#cards_row button:hover { border-color:#83cfe0 !important; background:var(--app-accent-soft) !important; transform:translateY(-2px) !important; }
+
+/* —— 工作区：聊天 + 右侧光幕 —— */
+#chat_panel {
+    background:var(--app-surface) !important; border:1px solid var(--app-line) !important;
+    border-radius:12px !important; min-height:52vh !important; max-height:70vh !important;
+    overflow-y:auto !important; padding:8px !important; margin-right:12px !important;
+}
+#canvas_panel {
+    border:1px solid #b9dcde !important; border-radius:12px !important; background:#f8fafc !important;
+    box-shadow:0 18px 42px rgba(19,34,56,.12) !important; height:72vh !important;
+    overflow:hidden !important; display:flex !important; flex-direction:column !important;
+}
+#canvas_toolbar {
+    border-bottom:1px solid var(--app-line) !important; padding:8px 12px !important;
+    align-items:center !important; background:var(--app-surface) !important;
+}
+
+/* 聊天气泡（Gradio 5 的 DOM，兼顾新旧类名，缺失时优雅回退） */
+#chat_panel .user-row .message, #chat_panel .message.user {
+    background:var(--app-accent-soft) !important; border:1px solid #b4d9dd !important;
+    border-radius:12px !important; color:var(--app-text) !important;
+}
+#chat_panel .bot-row .message, #chat_panel .message.bot {
+    background:transparent !important; border:none !important; color:#1e293b !important;
+}
+
+/* —— 底部输入舱 —— */
 #bottom_deck {
-    flex-shrink: 0 !important; background: transparent !important; border: none !important;
-    padding: 0 10% 4vh 10% !important; display: flex; align-items: center; justify-content: center; position: relative;
+    flex-shrink:0 !important; background:var(--app-canvas) !important;
+    padding:12px 24px 22px !important; position:relative;
 }
-.inner-capsule {
-    width: 100%; max-width: 900px;
-    background: #ffffff !important; border: 1px solid #cbd5e1 !important; border-radius: 26px !important;
-    box-shadow: 0 4px 25px rgba(0,0,0,0.05) !important; padding: 4px 8px !important; display: flex; align-items: center;
+#stop_btn_container {
+    position:absolute !important; top:-16px !important; left:50% !important;
+    transform:translateX(-50%) !important; z-index:50;
 }
-.inner-capsule:focus-within { box-shadow: 0 8px 30px rgba(14,165,233,0.1) !important; border-color: #93c5fd !important; }
-.inner-capsule .gradio-multimodal-textbox { border: none !important; box-shadow: none !important; background: transparent !important; font-size: 15px !important; outline: none !important; width: 100%; margin: 0 !important; padding: 0 !important;}
+/* 输入舱外壳（gr.Group#composer，此前错把样式挂在不存在的多模态类上） */
+#composer {
+    width:100% !important; max-width:1040px !important; margin:0 auto !important;
+    background:var(--app-surface) !important; border:1px solid var(--app-line-strong) !important;
+    border-radius:16px !important; box-shadow:0 10px 24px rgba(19,34,56,.08) !important;
+    padding:8px 10px !important;
+}
+#composer:focus-within { border-color:var(--app-accent) !important; box-shadow:0 0 0 3px rgba(8,127,140,.14) !important; }
+#composer > div { display:flex !important; align-items:center !important; gap:8px !important; width:100% !important; }
+#composer textarea {
+    border:none !important; background:transparent !important; box-shadow:none !important; outline:none !important;
+    font-size:15px !important; line-height:1.5 !important; padding:10px 6px !important;
+    min-height:44px !important; max-height:120px !important; resize:none !important; width:100% !important;
+}
+#file_input button, #send_btn {
+    min-width:44px !important; width:44px !important; height:44px !important; flex:0 0 44px !important;
+    border-radius:10px !important; font-size:20px !important; padding:0 !important;
+}
+#file_input button { border:1px solid var(--app-line-strong) !important; background:#fff !important; color:var(--app-navy) !important; }
+#send_btn { border:none !important; background:var(--app-accent) !important; color:#fff !important; }
+#send_btn:hover { background:#0a6f7a !important; }
 
-/* 高级悬浮打断急停锁钮 */
-#stop_btn_container { position: absolute; top: -45px; z-index: 100; left: 50%; transform: translateX(-50%); }
-/* App1 visual language */
-:root { --app-canvas:#f5f7fb; --app-surface:#fff; --app-line:#d8e0ea; --app-line-strong:#bdc9d8; --app-text:#142033; --app-muted:#64748b; --app-accent:#087f8c; --app-navy:#132238; }
-body, .gradio-container { background:var(--app-canvas) !important; color:var(--app-text) !important; }
-.gradio-container { max-width:1440px !important; }
-#top_nav { background:var(--app-surface) !important; border-bottom:1px solid var(--app-line) !important; padding:16px 24px !important; }
-#top_nav button, #canvas_toolbar button { border:1px solid var(--app-line-strong) !important; border-radius:8px !important; background:var(--app-surface) !important; color:var(--app-navy) !important; box-shadow:none !important; }
-#top_nav button:hover, #canvas_toolbar button:hover { border-color:var(--app-accent) !important; background:#eefbfb !important; }
-#top_nav button.primary, .gradio-accordion button.primary { background:var(--app-accent) !important; border-color:var(--app-accent) !important; color:#fff !important; }
-#main_stage { padding:18px 24px !important; }
-#welcome_mat { max-width:1120px !important; gap:12px !important; }
-#welcome_logo { margin:0 auto 8px !important; }
-#welcome_logo img { width:150px !important; height:150px !important; }
-#welcome_mat h1 { color:var(--app-navy) !important; font-size:clamp(2rem, 4vw, 2.8rem) !important; }
-#welcome_mat .prose p { color:var(--app-accent) !important; }
-#cards_row { max-width:1120px !important; gap:10px !important; }
-#cards_row button { min-height:86px !important; border:1px solid var(--app-line) !important; border-radius:8px !important; background:var(--app-surface) !important; color:var(--app-text) !important; box-shadow:none !important; font-size:13px !important; font-weight:700 !important; text-align:left !important; transition:border-color .15s ease, background .15s ease !important; }
-#cards_row button:hover { border-color:#b9dcde !important; background:#eefbfb !important; transform:none !important; box-shadow:none !important; }
-#chat_panel { background:var(--app-surface) !important; border:1px solid var(--app-line) !important; border-radius:8px !important; }
-#chat_panel .message.user { background:#f1fbfb !important; border:1px solid #b4d9dd !important; border-radius:8px !important; color:var(--app-text) !important; box-shadow:none !important; }
-#canvas_panel { border:1px solid #b9dcde !important; border-radius:8px !important; background:#f8fafc !important; box-shadow:0 18px 42px rgba(19,34,56,.12) !important; }
-#canvas_toolbar { border-bottom:1px solid var(--app-line) !important; }
-.gradio-accordion { border:1px solid var(--app-line) !important; border-radius:8px !important; background:var(--app-surface) !important; margin:0 24px 4px !important; }
-.gradio-accordion input:focus, .gradio-accordion textarea:focus { border-color:var(--app-accent) !important; box-shadow:0 0 0 3px rgba(8,127,140,.14) !important; }
-#bottom_deck { padding:12px 24px 22px !important; background:var(--app-canvas) !important; }
-.inner-capsule { max-width:1120px !important; border:1px solid var(--app-line-strong) !important; border-radius:8px !important; background:var(--app-surface) !important; box-shadow:0 10px 24px rgba(19,34,56,.08) !important; padding:10px !important; }
-.inner-capsule:focus-within { border-color:var(--app-accent) !important; box-shadow:0 0 0 3px rgba(8,127,140,.14) !important; }
+/* —— 响应式 —— */
 @media (max-width:760px) {
-    #top_nav, #main_stage { padding-left:14px !important; padding-right:14px !important; }
-    #top_nav { flex-wrap:wrap !important; gap:8px !important; }
+    #top_nav, #main_stage, #bottom_deck { padding-left:14px !important; padding-right:14px !important; }
     #cards_row { flex-wrap:wrap !important; }
-    #cards_row button { min-width:100% !important; }
-    .gradio-accordion { margin-left:14px !important; margin-right:14px !important; }
-    #bottom_deck { padding-left:14px !important; padding-right:14px !important; }
+    #cards_row button { flex:1 1 100% !important; min-width:100% !important; }
+    #chat_panel { margin-right:0 !important; }
+    #canvas_panel { height:50vh !important; }
 }
-
-/* app1 compact workbench proportions */
-#main_stage { overflow-y:auto !important; }
-#welcome_mat { margin:0 auto !important; padding:22px 0 10px !important; gap:8px !important; }
-#welcome_logo { margin:0 auto 2px !important; }
-#welcome_logo img { width:96px !important; height:96px !important; }
-#welcome_mat h1 { font-size:32px !important; line-height:1.15 !important; }
-#welcome_mat .prose p { font-size:15px !important; padding-bottom:10px !important; }
-#cards_row { align-items:stretch !important; }
-#cards_row button { min-height:76px !important; height:76px !important; padding:12px 16px !important; line-height:1.45 !important; white-space:normal !important; overflow-wrap:anywhere !important; }
-#bottom_deck { padding:10px 24px 18px !important; }
-#bottom_deck .inner-capsule { min-height:0 !important; height:auto !important; padding:8px 12px !important; }
-#composer { min-height:80px !important; height:80px !important; }
-#composer > div { align-items:center !important; }
-#composer textarea { min-height:48px !important; height:48px !important; max-height:96px !important; width:100% !important; padding:12px !important; text-align:left !important; line-height:1.45 !important; }
-#file_input button { min-width:48px !important; width:48px !important; height:48px !important; border:1px solid var(--app-line-strong) !important; border-radius:8px !important; background:#fff !important; color:var(--app-navy) !important; font-size:20px !important; }
-#send_btn { min-width:48px !important; height:48px !important; border-radius:8px !important; background:var(--app-accent) !important; color:#fff !important; font-size:22px !important; }
-#top_nav > .gradio-row:last-child { gap:8px !important; }
-#top_nav > .gradio-row:last-child button { min-width:88px !important; height:40px !important; border-radius:8px !important; }
-#top_nav > .gradio-row:last-child button:first-child { min-width:64px !important; }
-#welcome_logo img { width:112px !important; height:112px !important; }
-#cards_row .matrix-card { min-height:94px !important; height:94px !important; border-radius:12px !important; background:linear-gradient(180deg,#fff,#f8fafc) !important; border:1px solid var(--app-line) !important; font-size:15px !important; font-weight:760 !important; text-align:center !important; }
-#cards_row .matrix-card:hover { border-color:#83cfe0 !important; background:#f0fbfc !important; transform:translateY(-2px) !important; }
 """
 
 STANDBY_HTML = """
@@ -137,24 +176,24 @@ def reset_session():
 def prepare_task(text, files, history):
     text = text or ""
     files = files or []
-    
+
     if not text.strip() and not files:
         empty_payload = {"pure_text": "", "pure_files": []}
         return gr.update(), gr.update(), history, gr.update(), gr.update(), gr.update(), empty_payload
-        
+
     if history is None: history = []
-    
+
     display_msg = text if text.strip() else "处理当前加载的私有绝密文档数据集。"
     if files:
         f_names = [os.path.basename(f if isinstance(f, str) else getattr(f, 'filepath', getattr(f, 'name', str(f)))) for f in files]
         display_msg += f"\n\n*(📎 AI 已从隐秘网口挂载附加介质: {', '.join(f_names)})*"
-    
+
     history.append({"role": "user", "content": display_msg})
     # 并发控制占位锁
     history.append({"role": "assistant", "content": "*(⏳ 数据解析流重连，系统满载推演中...)*"})
-    
+
     payload = {"pure_text": text, "pure_files": files}
-    
+
     return (
         gr.update(value="", interactive=False, placeholder="⏳ 正在处理…"),
         gr.update(value=None),
@@ -162,27 +201,27 @@ def prepare_task(text, files, history):
         gr.update(visible=False),  # welcome_block (隐藏大 Logo)
         gr.update(visible=True),   # workspace_block (展现聊天瀑布)
         gr.update(visible=True),   # stop_btn (浮现红区悬浮按键！)
-        payload                    
+        payload
     )
 
 def execute_task(history, payload):
-    if not payload: 
+    if not payload:
         yield history, gr.skip(), gr.skip(), gr.update(interactive=True), gr.update(), gr.update(visible=False); return
-    
+
     safe_text = payload["pure_text"] if payload["pure_text"] else "提取文档结构并归纳"
-    
+
     # 传过去历史中已经清掉假占位气泡的那六条有效聊天，提供短效记忆追踪能力！
     past_memory = history[:-1] if len(history) > 1 else None
     res = engine.process_chat(safe_text, uploaded_files=payload["pure_files"], memory_context=past_memory)
-    
+
     history[-1]["content"] = res["text"]
-    
+
     new_html = res.get("screen_html")
     should_open = bool(new_html)
-    
+
     yield (
-        history, 
-        gr.update(visible=True) if should_open else gr.update(visible=False), 
+        history,
+        gr.update(visible=True) if should_open else gr.update(visible=False),
         gr.update(value=new_html) if should_open else gr.skip(),
         gr.update(interactive=True, placeholder="💡 输入研究任务…"),
         gr.update(value=None),
@@ -204,7 +243,9 @@ def close_right_panel():
     return gr.update(visible=False), False
 
 def put_text(text):
-    return gr.update(value={"text": text, "files": []})
+    # 底部是 gr.Textbox（纯文本），其 value 必须是字符串；
+    # 此前返回 {"text": ..., "files": []} 是多模态组件格式，会让预设卡片写坏输入框甚至报错。
+    return gr.update(value=text)
 
 
 LLM_PRESETS = {
@@ -231,17 +272,17 @@ def apply_llm_config(provider, base_url, model_name, api_key):
 def open_llm_settings():
     return gr.update(visible=True, open=True)
 
-with gr.Blocks(title="BloClaw OS") as demo:
+with gr.Blocks(title="BloClaw OS", css=saas_css) as demo:
     task_payload = gr.State()
-    is_panel_open = gr.State(False) 
+    is_panel_open = gr.State(False)
 
     # ================= 🌌 顶置全局导航栏 =================
+    # 注：原先的 EN / 历史 两个按钮没有任何事件绑定（点击无反应），已移除以免误导；
+    # 留下的 配置 / 新任务 / 更多 均有实际功能。
     with gr.Row(elem_id="top_nav"):
         gr.Markdown("<span style='font-size:20px; font-weight:800; color:#142033;'>🧬 BloClaw Matrix</span>")
         with gr.Row():
-            lang_btn = gr.Button("EN", variant="secondary", size="sm")
             config_btn = gr.Button("配置", variant="secondary", size="sm")
-            history_btn = gr.Button("历史", variant="secondary", size="sm")
             new_chat_btn = gr.Button("新任务", variant="secondary", size="sm")
             toggle_panel_btn = gr.Button("更多", variant="secondary", size="sm")
 
@@ -259,17 +300,15 @@ with gr.Blocks(title="BloClaw OS") as demo:
 
     # ================= 🌌 主干舞台 =================
     with gr.Column(elem_id="main_stage"):
-        
+
         # 居中神坛
         with gr.Column(elem_id="welcome_mat") as welcome_block:
             gr.HTML(
-                f'<div id="welcome_logo" style="width:100%;display:flex;justify-content:center;align-items:center;">'
-                f'<img src="{LOGO_DATA_URI}" alt="BloClaw Logo" width="150" height="150" '
-                'style="width:150px;height:150px;object-fit:contain;display:block;"></div>'
+                f'<div id="welcome_logo"><img src="{LOGO_DATA_URI}" alt="BloClaw Logo"></div>'
             )
-            gr.Markdown("<h1 style='font-size:3.1rem; color:#0f172a; margin:0; text-align:center;'>BloClaw Matrix</h1>")
-            gr.Markdown("<p style='color:#1d9bf0; font-size:1.15rem; text-align:center; padding-bottom:24px; font-weight:700;'>AI4S 超级智能工作站</p>")
-            
+            gr.Markdown("# BloClaw Matrix")
+            gr.Markdown("AI4S 超级智能工作站")
+
             with gr.Row(elem_id="cards_row"):
                 card1 = gr.Button("创新药研发", elem_classes="matrix-card")
                 card2 = gr.Button("生物信息与组学分析", elem_classes="matrix-card")
@@ -291,12 +330,12 @@ with gr.Blocks(title="BloClaw OS") as demo:
                     chatbot = gr.Chatbot(**chatbot_kwargs, type="messages")
                 except TypeError:
                     chatbot = gr.Chatbot(**chatbot_kwargs)
-                
+
             with gr.Column(scale=5, visible=False, elem_id="canvas_panel") as right_panel:
                 with gr.Row(elem_id="canvas_toolbar"):
                     gr.Markdown("### 🔬 物理与代码视窗", elem_classes="text-sm font-bold text-gray-500 mt-1 ml-1")
                     close_canvas_btn = gr.Button("✖ 掩盖视窗", size="sm", variant="secondary")
-                
+
                 with gr.Column(elem_classes="flex-1 overflow-hidden p-2 flex flex-col justify-center"):
                     canvas_screen = gr.HTML(value=STANDBY_HTML, elem_classes="h-full w-full", visible=True)
 
@@ -346,8 +385,8 @@ with gr.Blocks(title="BloClaw OS") as demo:
     ).then(
         fn=execute_task, inputs=[chatbot, task_payload], outputs=[chatbot, right_panel, canvas_screen, user_input, file_input, stop_btn]
     )
-    
+
     stop_btn.click(fn=force_stop, inputs=None, outputs=[user_input, file_input, stop_btn], cancels=[sub_1])
 
 if __name__ == "__main__":
-    demo.launch(server_name="127.0.0.1", server_port=7860, inbrowser=True, css=saas_css)
+    demo.launch(server_name="127.0.0.1", server_port=7860, inbrowser=True)

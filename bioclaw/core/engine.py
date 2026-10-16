@@ -1,4 +1,5 @@
 import os
+import ast
 import json
 import re
 import io
@@ -13,6 +14,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# bioclaw 包所在目录（.../bioclaw），用于把工具目录锚定到包，而非依赖进程 CWD
+BIOCLAW_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# 沙盒 AST 校验的高危清单（基础防护，非绝对隔离）
+_SANDBOX_DENY_IMPORTS = {"subprocess", "socket", "ctypes", "pty", "multiprocessing", "shutil", "resource", "pickle"}
+_SANDBOX_DENY_CALLS = {"eval", "exec", "compile", "__import__"}
+_SANDBOX_DENY_ATTR = {"system", "popen", "remove", "unlink", "rmdir", "removedirs", "fork", "kill", "putenv", "chmod", "chown", "rename"}
+_SANDBOX_DENY_DUNDER = {"__globals__", "__builtins__", "__subclasses__", "__bases__", "__mro__"}
+
 class BloClawCoordinator:
     def __init__(self):
         self.provider = "豆包"
@@ -25,7 +35,23 @@ class BloClawCoordinator:
             self.base_url = "https://api.openai.com/v1"
             self.model_name = "gpt-3.5-turbo"
         self.client = self._build_client()
-        self.tools_path = os.path.abspath("bioclaw/tools")
+        self.tools_path = os.path.join(BIOCLAW_DIR, "tools")
+        # 微智能体惰性实例化：仅当确定性路由（route_task）需要时才加载，
+        # 避免纯 LLM/Web 路径被 rdkit / biopython 的硬依赖拖累。
+        self._chem_agent = None
+        self._omics_agent = None
+
+    def _get_chem_agent(self):
+        if self._chem_agent is None:
+            from bioclaw.agents.chem_agent import ChemAgent
+            self._chem_agent = ChemAgent()
+        return self._chem_agent
+
+    def _get_omics_agent(self):
+        if self._omics_agent is None:
+            from bioclaw.agents.omics_agent import OmicsAgent
+            self._omics_agent = OmicsAgent()
+        return self._omics_agent
 
     def _build_client(self):
         # OpenAI-compatible local endpoints still require a non-empty SDK key.
@@ -53,11 +79,25 @@ class BloClawCoordinator:
         }
 
     def route_task(self, user_prompt, target_data=None):
-        """Keep the CLI demo contract while reusing the chat router."""
+        """CLI demo 路径：按数据形态用确定性微智能体直接计算，
+        体现 'LLM 路由意图、微智能体做确定性计算' 的设计；
+        没有结构化 target_data 时回退到 LLM 聊天路由。返回纯文本。"""
         prompt = str(user_prompt or "")
         if target_data:
+            token = str(target_data).strip()
+            compact = re.sub(r"\s+", "", token).upper()
+            # 形如 DNA/RNA 的载荷 -> 组学微智能体
+            if compact and set(compact) <= set("ACGTUN"):
+                return self._get_omics_agent().analyze_sequence(token)
+            # 否则尝试按 SMILES 解析分子 -> 化学微智能体（含确定性 Lipinski 规则）
+            try:
+                from rdkit import Chem
+                if Chem.MolFromSmiles(token) is not None:
+                    return self._get_chem_agent().evaluate_molecule(token)["text"]
+            except Exception:
+                pass
             prompt = f"{prompt}\n目标数据：{target_data}"
-        return self.process_chat(prompt)
+        return self.process_chat(prompt)["text"]
 
     def clean_code(self, raw_code):
         if not raw_code: return ""
@@ -91,20 +131,55 @@ class BloClawCoordinator:
         content = getattr(getattr(choices[0], "message", None), "content", None)
         return content if isinstance(content, str) else str(content or "")
 
+    def _validate_sandbox_code(self, code):
+        """基础 AST 静态校验：拦截明显破坏性的导入/调用/属性访问。
+        这是防护而非绝对隔离——它会放过常规绘图/数值代码，挡下 os.system、
+        subprocess、socket、eval/exec、以及 __subclasses__ 这类逃逸向量。"""
+        if not code:
+            return None
+        try:
+            tree = ast.parse(code)
+        except SyntaxError as exc:
+            return f"代码无法解析（语法错误）：{exc}"
+        for node in ast.walk(tree):
+            if isinstance(node, (ast.Import, ast.ImportFrom)):
+                mods = [a.name.split(".")[0] for a in node.names]
+                if isinstance(node, ast.ImportFrom) and node.module:
+                    mods.append(node.module.split(".")[0])
+                hit = _SANDBOX_DENY_IMPORTS.intersection(m for m in mods if m)
+                if hit:
+                    return f"安全沙盒拦截：禁止导入高危模块 {sorted(hit)}"
+            elif isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id in _SANDBOX_DENY_CALLS:
+                return f"安全沙盒拦截：禁止调用 {node.func.id}()"
+            elif isinstance(node, ast.Attribute):
+                if node.attr in _SANDBOX_DENY_DUNDER:
+                    return f"安全沙盒拦截：禁止访问内部属性 {node.attr}"
+                if node.attr in _SANDBOX_DENY_ATTR:
+                    return f"安全沙盒拦截：禁止危险操作 .{node.attr}()"
+        return None
+
     def execute_sandbox(self, python_code):
         output_buffer = io.StringIO()
         html_file = os.path.abspath("sandbox_plot.html")
         png_file = os.path.abspath("sandbox_plot.png")
-        
+
         # 战前扫清残骸，防止大模型偷懒直接用了上次生成的图
         if os.path.exists(html_file): os.remove(html_file)
         if os.path.exists(png_file): os.remove(png_file)
-        
+
+        safe_code = python_code
+        # 剔除阻塞性的展示函数
+        safe_code = re.sub(r"fig\.show\(\)|plt\.show\(\)|figure\.show\(\)", "", safe_code)
+
+        # 🛡️ 执行前先过 AST 安全校验，挡下破坏性代码
+        violation = self._validate_sandbox_code(safe_code)
+        if violation:
+            return {"success": False, "stdout": "", "error": violation, "plot_html": None, "plot_path": None}
+
         success = True; error_msg = ""
         try:
             with redirect_stdout(output_buffer):
-                # 🌟 剥除花里胡哨的底层劫持，我们用最干净原生的沙盒跑大模型自己写的完美代码！
-                # 唯一就是预加载一下常用包，节省时间。
+                # 预加载常用包，节省时间
                 preset_env = """
 import os, re, requests, base64
 import numpy as np
@@ -117,11 +192,9 @@ import warnings
 warnings.filterwarnings('ignore')
 plt.rcParams['figure.figsize'] = (10, 6)
 """
-                safe_code = python_code
-                # 剔除阻塞性的展示函数
-                safe_code = re.sub(r"fig\.show\(\)|plt\.show\(\)|figure\.show\(\)", "", safe_code)
-                
-                exec(preset_env + safe_code, globals())
+                # 🌟 在独立命名空间执行，避免污染引擎自身的全局环境
+                sandbox_ns = {}
+                exec(compile(preset_env + safe_code, "<bloclaw_sandbox>", "exec"), sandbox_ns)
         except Exception as e:
             success = False; error_msg = traceback.format_exc()
             
