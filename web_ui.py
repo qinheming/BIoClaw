@@ -14,19 +14,25 @@ with open(LOGO_PATH, "rb") as logo_file:
 # 现在合并为一套 App1 的青灰-深蓝视觉语言，避免数值互相打架。
 saas_css = """
 :root {
-    --app-canvas:#f5f7fb; --app-surface:#ffffff; --app-line:#d8e0ea;
+    --app-canvas:#ffffff; --app-surface:#ffffff; --app-line:#d8e0ea;
     --app-line-strong:#bdc9d8; --app-text:#142033; --app-muted:#64748b;
     --app-accent:#087f8c; --app-accent-soft:#eefbfb; --app-navy:#132238;
 }
 
 /* —— 整体外壳 —— */
+html, body, #root {
+    width:100% !important; min-width:0 !important; min-height:100% !important;
+    margin:0 !important; background:#fff !important;
+}
+body { overflow-x:hidden !important; }
 .gradio-container {
-    max-width:1280px !important; margin:0 auto !important;
-    background:var(--app-canvas) !important; color:var(--app-text) !important;
+    width:100% !important; max-width:none !important; margin:0 !important;
+    background:#fff !important; color:var(--app-text) !important;
     font-family:-apple-system, system-ui, "Segoe UI", sans-serif !important;
     min-height:100vh !important; display:flex !important; flex-direction:column !important;
     padding:0 !important;
 }
+.gradio-container > .main { width:100% !important; max-width:none !important; padding:0 !important; }
 footer { display:none !important; }
 
 /* —— 顶部导航 —— */
@@ -56,12 +62,12 @@ footer { display:none !important; }
 /* —— 主干舞台 —— */
 #main_stage {
     flex:1 1 auto !important; overflow-y:auto !important; padding:20px 24px !important;
-    display:flex; flex-direction:column;
+    display:flex; flex-direction:column; background:#fff !important;
 }
 
 /* —— 首屏欢迎 —— */
 #welcome_mat {
-    margin:auto !important; width:100%; max-width:1040px;
+    margin:auto !important; width:100%; max-width:1200px;
     display:flex; flex-direction:column; align-items:center; gap:10px;
 }
 #welcome_logo { display:flex !important; justify-content:center !important; margin:0 auto 4px !important; }
@@ -77,10 +83,11 @@ footer { display:none !important; }
 
 /* —— 任务卡片：桌面不折行，移动端折行 —— */
 #cards_row { display:flex !important; flex-wrap:nowrap !important; width:100%; gap:12px; align-items:stretch; }
+#cards_row > div { min-width:0 !important; flex:1 1 0 !important; }
 #cards_row button {
-    flex:1 1 0 !important; min-height:88px !important;
+    flex:1 1 0 !important; min-width:0 !important; width:100% !important; min-height:88px !important;
     border:1px solid var(--app-line) !important; border-radius:12px !important;
-    background:linear-gradient(180deg,#fff,#f8fafc) !important; color:var(--app-text) !important;
+    background:#fff !important; color:var(--app-text) !important;
     box-shadow:none !important; font-size:14px !important; font-weight:700 !important;
     text-align:center !important; line-height:1.4 !important; padding:12px 14px !important;
     white-space:normal !important; overflow-wrap:anywhere !important;
@@ -95,7 +102,7 @@ footer { display:none !important; }
     overflow-y:auto !important; padding:8px !important; margin-right:12px !important;
 }
 #canvas_panel {
-    border:1px solid #b9dcde !important; border-radius:12px !important; background:#f8fafc !important;
+    border:1px solid #b9dcde !important; border-radius:12px !important; background:#fff !important;
     box-shadow:0 18px 42px rgba(19,34,56,.12) !important; height:72vh !important;
     overflow:hidden !important; display:flex !important; flex-direction:column !important;
 }
@@ -115,7 +122,7 @@ footer { display:none !important; }
 
 /* —— 底部输入舱 —— */
 #bottom_deck {
-    flex-shrink:0 !important; background:var(--app-canvas) !important;
+    flex-shrink:0 !important; background:#fff !important;
     padding:12px 24px 22px !important; position:relative;
 }
 #stop_btn_container {
@@ -124,7 +131,7 @@ footer { display:none !important; }
 }
 /* 输入舱外壳（gr.Group#composer，此前错把样式挂在不存在的多模态类上） */
 #composer {
-    width:100% !important; max-width:1040px !important; margin:0 auto !important;
+    width:100% !important; max-width:1200px !important; margin:0 auto !important;
     background:var(--app-surface) !important; border:1px solid var(--app-line-strong) !important;
     border-radius:16px !important; box-shadow:0 10px 24px rgba(19,34,56,.08) !important;
     padding:8px 10px !important;
@@ -139,6 +146,10 @@ footer { display:none !important; }
 #file_input button, #send_btn {
     min-width:44px !important; width:44px !important; height:44px !important; flex:0 0 44px !important;
     border-radius:10px !important; font-size:20px !important; padding:0 !important;
+}
+#file_input, #file_input > div {
+    width:44px !important; min-width:44px !important; max-width:44px !important;
+    flex:0 0 44px !important; background:#fff !important;
 }
 #file_input button { border:1px solid var(--app-line-strong) !important; background:#fff !important; color:var(--app-navy) !important; }
 #send_btn { border:none !important; background:var(--app-accent) !important; color:#fff !important; }
